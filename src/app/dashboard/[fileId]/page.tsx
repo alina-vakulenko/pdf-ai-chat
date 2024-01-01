@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/dist/types/server";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { db } from "@/db";
 import PdfRenderer from "@/components/PdfRenderer";
+import ChatWrapper from "@/components/ChatWrapper";
 
 interface FileProps {
   params: { fileId: string };
