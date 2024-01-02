@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 import SimpleBar from "simplebar-react";
+import PdfFullScreen from "./PdfFullScreen";
 
 interface PdfRendererProps {
   url: string;
@@ -42,6 +43,9 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
   const [currPage, setCurrPage] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [renderedScale, setRenderedScale] = useState<number | null>(null);
+
+  const isLoading = renderedScale !== zoom;
 
   const CustomPageValidator = z.object({
     page: z
@@ -68,11 +72,12 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
     <div className="w-full bg-white rounded-md shadow flex flex-col items-center">
       {/** TOOLBAR START */}
       <div className="h-14 w-full border-b border-zinc-200 flex items-center justify-between px-2">
-        {/** PAGINATION START */}
+        {/** PAGINATION */}
         <div className="flex items-center gap-1.5">
           <Button
             onClick={() => {
               setCurrPage((prev) => (prev - 1 > 1 ? prev - 1 : 1));
+              setValue("page", String(currPage - 1));
             }}
             disabled={currPage <= 1}
             variant="ghost"
@@ -106,6 +111,7 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               setCurrPage((prev) =>
                 prev + 1 > pagesCount! ? pagesCount! : prev + 1
               );
+              setValue("page", String(currPage + 1));
             }}
             disabled={!pagesCount || currPage === pagesCount}
             variant="ghost"
@@ -114,8 +120,9 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
             <ChevronUp className="w-4 h-4" />
           </Button>
         </div>
-        {/** PAGINATION END */}
+        {/** TOOLS */}
         <div className="space-x-2">
+          {/** ZOOM */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button aria-label="zoom" variant="ghost" className="gap-1.5">
@@ -138,7 +145,7 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
+          {/** ROTATE */}
           <Button
             aria-label="rotate 90 degrees"
             variant="ghost"
@@ -146,11 +153,14 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
           >
             <RotateCw className="h-4 w-4" />
           </Button>
+          {/** FULL SCREEN */}
+          <PdfFullScreen fileUrl={url} />
         </div>
       </div>
       {/** TOOLBAR END */}
+      {/** PDF VIEWER */}
       <div className="flex-1 w-full max-h-screen">
-        <SimpleBar autoHide={false} className="max-h-[calc(100vh - 10rem)]">
+        <SimpleBar autoHide={false} className="max-h-[calc(100vh-10rem)]">
           <div ref={ref}>
             <Document
               file={url}
@@ -169,11 +179,31 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
               }}
               onLoadSuccess={({ numPages }) => setPagesCount(numPages)}
             >
+              {isLoading && renderedScale ? (
+                <Page
+                  key={"@" + renderedScale}
+                  pageNumber={currPage}
+                  width={width ? width : 1}
+                  scale={zoom}
+                  rotate={rotation}
+                />
+              ) : null}
+
               <Page
+                key={"@" + zoom}
+                className={cn(isLoading ? "hidden" : "")}
                 pageNumber={currPage}
                 width={width ? width : 1}
                 scale={zoom}
                 rotate={rotation}
+                loading={
+                  <div className="felx justify-center">
+                    <Loader2 className="my-24 h-6 w-6 animate-spin" />
+                  </div>
+                }
+                onRenderSuccess={() => {
+                  setRenderedScale(zoom);
+                }}
               />
             </Document>
           </div>
