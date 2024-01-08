@@ -5,11 +5,16 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Button } from "./ui/button";
 import Dropzone from "react-dropzone";
-import { Cloud, Divide, File, Loader2 } from "lucide-react";
+import { Cloud, File, Loader2 } from "lucide-react";
 import { Progress } from "./ui/progress";
 import { useToast } from "./ui/use-toast";
 import { trpc } from "@/app/_trpc/client";
 import { useRouter } from "next/navigation";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { PineconeStore } from "langchain/vectorstores/pinecone";
+import { getPinecone } from "@/lib/pinecone";
+import { db } from "@/db";
 
 const UploadDropzone = () => {
   const router = useRouter();
@@ -44,7 +49,9 @@ const UploadDropzone = () => {
   };
 
   const { mutate: saveFile } = trpc.createFile.useMutation({
-    onSuccess: (file) => {},
+    onSuccess: (file) => {
+      console.log(file);
+    },
   });
   const { data: signedUrl } = trpc.createSignedUrl.useQuery();
 
@@ -72,12 +79,51 @@ const UploadDropzone = () => {
           body: formData,
         });
 
-        saveFile({
+        const createdFile = saveFile({
           key: signedUrl.key,
           name: acceptedFiles[0].name,
           url: `https://stream-bucket1.s3.eu-north-1.amazonaws.com/${signedUrl.key}`,
         });
+        console.log("created", createdFile);
+        try {
+          const res = await fetch(
+            `https://stream-bucket1.s3.eu-north-1.amazonaws.com/${signedUrl.key}`
+          );
+          const blob = await res.blob();
 
+          const loader = new PDFLoader(blob);
+          const pageLevelDocs = await loader.load();
+
+          const pagesCount = pageLevelDocs.length;
+
+          //vectorize and index the entire document
+          const pineconeIndex = getPinecone();
+          const embeddings = new OpenAIEmbeddings({
+            openAIApiKey: process.env.OPENAI_API_KEY,
+          });
+
+          await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+            pineconeIndex,
+          });
+
+          await db.file.update({
+            data: {
+              uploadStatus: "SUCCESS",
+            },
+            where: {
+              id: createdFile.id,
+            },
+          });
+        } catch (err) {
+          await db.file.update({
+            data: {
+              uploadStatus: "FAILED",
+            },
+            where: {
+              id: createdFile.id,
+            },
+          });
+        }
         clearInterval(progressInterval);
         setUploadProgress(100);
         startPolling({ key: signedUrl.key });
