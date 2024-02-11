@@ -8,6 +8,10 @@ import { TRPCError } from "@trpc/server";
 import { s3 } from "@/app/_s3/s3";
 import { db } from "@/db";
 import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { PineconeStore } from "langchain/vectorstores/pinecone";
+import { getPinecone } from "@/lib/pinecone";
 
 const MAX_FILE_SIZE = 1024 * 1024 * 4;
 function checkFileType(file: File) {
@@ -139,6 +143,42 @@ export const appRouter = router({
           uploadStatus: "PROCESSING",
         },
       });
+
+      try {
+        const res = await fetch(input.url);
+        const blob = await res.blob();
+
+        const loader = new PDFLoader(blob);
+        const pageLevelDocs = await loader.load();
+        const pagesCount = pageLevelDocs.length;
+
+        const pineconeIndex = getPinecone();
+        const embeddings = new OpenAIEmbeddings({
+          openAIApiKey: process.env.OPENAI_API_KEY,
+        });
+
+        await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+          pineconeIndex,
+        });
+
+        await db.file.update({
+          data: {
+            uploadStatus: "SUCCESS",
+          },
+          where: {
+            id: file.id,
+          },
+        });
+      } catch (err) {
+        await db.file.update({
+          data: {
+            uploadStatus: "FAILED",
+          },
+          where: {
+            id: file.id,
+          },
+        });
+      }
 
       return file;
     }),
