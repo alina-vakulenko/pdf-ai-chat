@@ -178,7 +178,7 @@ export const ChatContextProvider = ({
         );
       }
     },
-    onError: (_, _, context) => {
+    onError: (_, __, context) => {
       setMessage(backupMessage.current);
       utils.getFileMessages.setData(
         { fileId },

@@ -22,10 +22,10 @@ import PdfRotate from "./PdfRotate";
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 interface PdfRendererProps {
-  url: string;
+  fileUrl: string;
 }
 
-const PdfRenderer = ({ url }: PdfRendererProps) => {
+const PdfRenderer = ({ fileUrl }: PdfRendererProps) => {
   const { toast } = useToast();
   const { width, ref } = useResizeDetector();
 
@@ -113,7 +113,7 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
         <div className="space-x-2">
           <PdfZoom zoom={zoom} setZoom={setZoom} />
           <PdfRotate setRotation={setRotation} />
-          <PdfFullScreen fileUrl={url} />
+          <PdfFullScreen fileUrl={fileUrl} />
         </div>
       </div>
       {/** TOOLBAR END */}
@@ -122,7 +122,7 @@ const PdfRenderer = ({ url }: PdfRendererProps) => {
         <SimpleBar autoHide={false} className="max-h-[calc(100vh-10rem)]">
           <div ref={ref}>
             <Document
-              file={url}
+              file={fileUrl}
               className="max-h-full"
               loading={
                 <div className="flex justify-center">

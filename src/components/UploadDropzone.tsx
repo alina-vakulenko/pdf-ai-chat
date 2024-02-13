@@ -18,28 +18,24 @@ const UploadDropzone = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
-  const [fileBlob, setFileBlob] = useState(Blob);
-  const { data: presignedUrl } = trpc.createSignedUrl.useQuery(undefined, {
-    enabled: !!file,
-  });
-
-  const { mutate: startPolling } = trpc.getFile.useMutation({
-    onSuccess: (file) => {
-      router.push(`/dashboard/${file.id}`);
-    },
-    retry: true,
-    retryDelay: 500,
-  });
+  const { data: presignedUrl, refetch } = trpc.createSignedUrl.useQuery();
+  // const { mutate: startPolling } = trpc.getFile.useMutation({
+  //   onSuccess: (file) => {
+  //     router.push(`/dashboard/${file.id}`);
+  //   },
+  //   retry: true,
+  //   retryDelay: 500,
+  // });
 
   const { mutate: createFile } = trpc.createFile.useMutation({
     onSuccess: async (file) => {
-      console.log("file saved to db and processed by pinecone");
-      console.log(file);
       setFile(null);
+      router.push(`/dashboard/${file.id}`);
     },
   });
 
   const saveFile = async (file: File) => {
+    refetch();
     if (!presignedUrl?.key) {
       return toast({
         title: "Something went wrong",
@@ -47,24 +43,25 @@ const UploadDropzone = () => {
         variant: "destructive",
       });
     }
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
 
-    const formData = new FormData();
-    formData.set("file", file);
+      await fetch(presignedUrl.url, {
+        method: "PUT",
+        body: formData,
+      });
 
-    const res = await fetch(presignedUrl.url, {
-      method: "PUT",
-      body: formData,
-    });
+      const createdFile = createFile({
+        name: file.name,
+        key: presignedUrl.key,
+        url: `https://stream-bucket1.s3.eu-north-1.amazonaws.com/${presignedUrl.key}`,
+      });
 
-    console.log("res to save s3", res);
-
-    const createdFile = createFile({
-      name: file.name,
-      key: presignedUrl.key,
-      url: `https://stream-bucket1.s3.eu-north-1.amazonaws.com/${presignedUrl.key}`,
-    });
-
-    return createdFile;
+      return createdFile;
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   return (
@@ -73,13 +70,14 @@ const UploadDropzone = () => {
       onDrop={async (acceptedFiles) => {
         setIsUploading(true);
         setFile(acceptedFiles[0]);
+
         const progressInterval = updateUploadProgress();
 
         await saveFile(acceptedFiles[0]);
 
         clearInterval(progressInterval);
         finishUpload();
-        startPolling({ key: presignedUrl?.key! });
+        // startPolling({ key: presignedUrl?.key! });
       }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (

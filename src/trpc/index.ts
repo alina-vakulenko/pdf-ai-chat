@@ -156,7 +156,7 @@ export const appRouter = router({
         const embeddings = new OpenAIEmbeddings({
           openAIApiKey: process.env.OPENAI_API_KEY,
         });
-
+        console.log("embeddings", embeddings);
         await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
           pineconeIndex,
         });
@@ -170,6 +170,7 @@ export const appRouter = router({
           },
         });
       } catch (err) {
+        console.log(err);
         await db.file.update({
           data: {
             uploadStatus: "FAILED",
@@ -215,18 +216,20 @@ export const appRouter = router({
       return file;
     }),
   createSignedUrl: privateProcedure.query(async () => {
-    const key = uuidv4();
+    const key = uuidv4() + ".pdf";
 
     const putObjectCommand = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET,
       Key: key,
-      // ContentType: "application/pdf",
+      ContentType: "application/pdf",
       // ContentLength: MAX_FILE_SIZE,
     });
 
-    const url = await getSignedUrl(s3, putObjectCommand, { expiresIn: 60 });
+    const uploadUrl = await getSignedUrl(s3, putObjectCommand, {
+      expiresIn: 120,
+    });
 
-    return { url, key };
+    return { url: uploadUrl, key };
   }),
 });
 
