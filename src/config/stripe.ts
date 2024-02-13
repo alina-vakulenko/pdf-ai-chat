@@ -11,6 +11,9 @@ export const PLANS = [
     slug: "pro",
     quota: 50,
     pagesPerPdf: 25,
-    price: { amount: 14, priceIds: { test: "stripeId...", production: "" } },
+    price: {
+      amount: 14,
+      priceIds: { test: "price_1OjR0WKTA7bFkq8AeHe1Ou3n", production: "" },
+    },
   },
 ];
