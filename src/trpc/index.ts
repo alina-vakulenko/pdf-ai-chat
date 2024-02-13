@@ -7,6 +7,11 @@ import { publicProcedure, privateProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
 import { s3 } from "@/app/_s3/s3";
 import { db } from "@/db";
+import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
+import { PDFLoader } from "langchain/document_loaders/fs/pdf";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { PineconeStore } from "langchain/vectorstores/pinecone";
+import { getPinecone } from "@/lib/pinecone";
 
 const MAX_FILE_SIZE = 1024 * 1024 * 4;
 function checkFileType(file: File) {
@@ -50,6 +55,56 @@ export const appRouter = router({
       },
     });
   }),
+  getFileMessages: privateProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).nullish(),
+        cursor: z.string().nullish(),
+        fileId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { userId } = ctx;
+      const { fileId, cursor } = input;
+      const limit = input.limit ?? INFINITE_QUERY_LIMIT;
+
+      const file = await db.file.findFirst({
+        where: {
+          id: fileId,
+          userId,
+        },
+      });
+
+      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const messages = await db.message.findMany({
+        take: limit + 1,
+        where: {
+          fileId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        cursor: cursor ? { id: cursor } : undefined,
+        select: {
+          id: true,
+          isUserMessage: true,
+          text: true,
+          createdAt: true,
+        },
+      });
+
+      let nextCursor: typeof cursor | undefined = undefined;
+      if (messages.length > limit) {
+        const nextItem = messages.pop();
+        nextCursor = nextItem?.id;
+      }
+
+      return {
+        messages,
+        nextCursor,
+      };
+    }),
   deleteFile: privateProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -89,7 +144,60 @@ export const appRouter = router({
         },
       });
 
+      try {
+        const res = await fetch(input.url);
+        const blob = await res.blob();
+
+        const loader = new PDFLoader(blob);
+        const pageLevelDocs = await loader.load();
+        const pagesCount = pageLevelDocs.length;
+
+        const pineconeIndex = getPinecone();
+        const embeddings = new OpenAIEmbeddings({
+          openAIApiKey: process.env.OPENAI_API_KEY,
+        });
+        console.log("embeddings", embeddings);
+        await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
+          pineconeIndex,
+        });
+
+        await db.file.update({
+          data: {
+            uploadStatus: "SUCCESS",
+          },
+          where: {
+            id: file.id,
+          },
+        });
+      } catch (err) {
+        console.log(err);
+        await db.file.update({
+          data: {
+            uploadStatus: "FAILED",
+          },
+          where: {
+            id: file.id,
+          },
+        });
+      }
+
       return file;
+    }),
+  getFileUploadStatus: privateProcedure
+    .input(z.object({ fileId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const file = await db.file.findFirst({
+        where: {
+          id: input.fileId,
+          userId: ctx.userId,
+        },
+      });
+
+      if (!file) {
+        return { status: "PENDING" as const };
+      }
+
+      return { status: file.uploadStatus };
     }),
   getFile: privateProcedure
     .input(z.object({ key: z.string() }))
@@ -108,18 +216,20 @@ export const appRouter = router({
       return file;
     }),
   createSignedUrl: privateProcedure.query(async () => {
-    const key = uuidv4();
+    const key = uuidv4() + ".pdf";
 
     const putObjectCommand = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET,
       Key: key,
-      // ContentType: "application/pdf",
+      ContentType: "application/pdf",
       // ContentLength: MAX_FILE_SIZE,
     });
 
-    const url = await getSignedUrl(s3, putObjectCommand, { expiresIn: 60 });
+    const uploadUrl = await getSignedUrl(s3, putObjectCommand, {
+      expiresIn: 120,
+    });
 
-    return { url, key };
+    return { url: uploadUrl, key };
   }),
 });
 
