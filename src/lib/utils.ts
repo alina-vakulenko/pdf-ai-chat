@@ -8,12 +8,15 @@ export function cn(...inputs: ClassValue[]) {
 
 export function absoluteUrl(path: string) {
   if (typeof window !== "undefined") {
+    console.log(path);
     return path;
   }
   if (process.env.VERCEL_URL) {
+    console.log(`https://${process.env.VERCEL_URL}${path}`);
     return `https://${process.env.VERCEL_URL}${path}`;
   }
-  return `http://localhost:${process.env.PORT ?? 3000}${path}`;
+  console.log(`http://localhost:${process.env.PORT ?? 8000}${path}`);
+  return `http://localhost:${process.env.PORT ?? 8000}${path}`;
 }
 
 export function constructMetadata({

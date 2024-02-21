@@ -10,7 +10,7 @@ import UploadProgress from "./UploadProgress";
 import UploadedFilePreview from "./UploadedFilePreview";
 import { useUploadProgress } from "./useUploadProgress";
 
-const UploadDropzone = () => {
+const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const router = useRouter();
   const { toast } = useToast();
   const { uploadProgress, updateUploadProgress, finishUpload } =
@@ -19,13 +19,6 @@ const UploadDropzone = () => {
 
   const [file, setFile] = useState<File | null>(null);
   const { data: presignedUrl, refetch } = trpc.createSignedUrl.useQuery();
-  // const { mutate: startPolling } = trpc.getFile.useMutation({
-  //   onSuccess: (file) => {
-  //     router.push(`/dashboard/${file.id}`);
-  //   },
-  //   retry: true,
-  //   retryDelay: 500,
-  // });
 
   const { mutate: createFile } = trpc.createFile.useMutation({
     onSuccess: async (file) => {
@@ -55,7 +48,7 @@ const UploadDropzone = () => {
       const createdFile = createFile({
         name: file.name,
         key: presignedUrl.key,
-        url: `https://stream-bucket1.s3.eu-north-1.amazonaws.com/${presignedUrl.key}`,
+        url: `https://${process.env.AWS_BUCKET}.s3.eu-north-1.amazonaws.com/${presignedUrl.key}`,
       });
 
       return createdFile;
@@ -77,7 +70,6 @@ const UploadDropzone = () => {
 
         clearInterval(progressInterval);
         finishUpload();
-        // startPolling({ key: presignedUrl?.key! });
       }}
     >
       {({ getRootProps, getInputProps, acceptedFiles }) => (

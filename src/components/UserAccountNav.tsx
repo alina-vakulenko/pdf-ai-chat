@@ -1,4 +1,7 @@
+import Link from "next/link";
 import Image from "next/image";
+import { Gem } from "lucide-react";
+import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/server";
 import { getUserSubscriptionPlan } from "@/lib/stripe";
 import {
   DropdownMenu,
@@ -10,9 +13,6 @@ import {
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Icons } from "./Icons";
-import Link from "next/link";
-import { Gem } from "lucide-react";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/dist/types/components";
 
 type UserAccountNavProps = {
   name: string;

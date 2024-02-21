@@ -29,7 +29,7 @@ export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
     const { getUser } = getKindeServerSession();
     const user = await getUser();
-
+    console.log("kinde user", user);
     if (!user?.id || !user.email) throw new TRPCError({ code: "UNAUTHORIZED" });
 
     const dbUser = await db.user.findFirst({
@@ -37,14 +37,15 @@ export const appRouter = router({
         id: user.id,
       },
     });
-
+    console.log("db before", dbUser);
     if (!dbUser) {
-      await db.user.create({
+      const res = await db.user.create({
         data: {
           id: user.id, // from kinde
           email: user.email,
         },
       });
+      console.log("db after", res);
     }
 
     return { success: true };
@@ -75,9 +76,13 @@ export const appRouter = router({
 
     const subscriptionPlan = await getUserSubscriptionPlan();
 
-    if (subscriptionPlan.isSubscribed && dbUser.stripeCustomerId) {
+    if (
+      subscriptionPlan.isSubscribed &&
+      "stripeCustomerId" in dbUser &&
+      dbUser?.stripeCustomerId
+    ) {
       const stripeSession = await stripe.billingPortal.sessions.create({
-        customer: dbUser.stripeCustomerId,
+        customer: dbUser.stripeCustomerId as string,
         return_url: billingUrl,
       });
 
@@ -200,11 +205,30 @@ export const appRouter = router({
         const pageLevelDocs = await loader.load();
         const pagesCount = pageLevelDocs.length;
 
+        const isSubscribed = true;
+        const isProExceeded =
+          pagesCount > PLANS.find((plan) => plan.name === "Pro")!.pagesPerPdf;
+        const isFreeExceeded =
+          pagesCount > PLANS.find((plan) => plan.name === "Free")!.pagesPerPdf;
+
+        if (
+          (isSubscribed && isProExceeded) ||
+          (!isSubscribed && isFreeExceeded)
+        ) {
+          await db.file.update({
+            data: {
+              uploadStatus: "FAILED",
+            },
+            where: {
+              id: file.id,
+            },
+          });
+        }
         const pineconeIndex = getPinecone();
         const embeddings = new OpenAIEmbeddings({
           openAIApiKey: process.env.OPENAI_API_KEY,
         });
-        console.log("embeddings", embeddings);
+
         await PineconeStore.fromDocuments(pageLevelDocs, embeddings, {
           pineconeIndex,
         });

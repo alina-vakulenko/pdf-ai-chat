@@ -13,7 +13,7 @@ const Page = async ({ params }: FileProps) => {
 
   const { getUser } = getKindeServerSession();
   const user = await getUser();
-
+  console.log("dashboard", user);
   if (!user || !user.id) redirect(`/auth-callback?origin=dashboard/${fileId}`);
 
   const file = await db.file.findFirst({
