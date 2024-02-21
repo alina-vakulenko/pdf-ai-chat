@@ -18,7 +18,9 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const [isUploading, setIsUploading] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
-  const { data: presignedUrl, refetch } = trpc.createSignedUrl.useQuery();
+  const { data: presignedUrl, refetch } = trpc.createSignedUrl.useQuery({
+    isSubscribed,
+  });
 
   const { mutate: createFile } = trpc.createFile.useMutation({
     onSuccess: async (file) => {
@@ -49,6 +51,7 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
         name: file.name,
         key: presignedUrl.key,
         url: `https://${process.env.AWS_BUCKET}.s3.eu-north-1.amazonaws.com/${presignedUrl.key}`,
+        isSubscribed,
       });
 
       return createdFile;
@@ -88,7 +91,9 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
                   <span className="font-semibold">Click to upload</span> or grad
                   and drop
                 </p>
-                <p className="text-xs text-zinc-500">PDF (up to 4MB)</p>
+                <p className="text-xs text-zinc-500">
+                  PDF (up to {isSubscribed ? "16" : "4"}MB)
+                </p>
               </div>
               {acceptedFiles && acceptedFiles[0] ? (
                 <UploadedFilePreview fileName={acceptedFiles[0].name} />

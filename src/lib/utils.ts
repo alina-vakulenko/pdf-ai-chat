@@ -48,7 +48,7 @@ export function constructMetadata({
       // creator:"@twitteruser"
     },
     icons,
-    metadataBase: new URL("https://quill-----"),
+    metadataBase: new URL("https://quill-pdf-assist.vercel.app"),
     themeColor: "#FFF",
     ...(noIndex && {
       robots: {

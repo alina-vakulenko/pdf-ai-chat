@@ -16,7 +16,12 @@ import { absoluteUrl } from "@/lib/utils";
 import { getUserSubscriptionPlan, stripe } from "@/lib/stripe";
 import { PLANS } from "@/config/stripe";
 
-const MAX_FILE_SIZE = 1024 * 1024 * 4;
+const FREE_PLAN = PLANS.find((plan) => plan.name === "Free");
+const PRO_PLAN = PLANS.find((plan) => plan.name === "Pro");
+
+const FREE_MAX_FILE_SIZE = 1024 * 1024 * 4;
+const PRO_MAX_FILE_SIZE = 1024 * 1024 * 16;
+
 function checkFileType(file: File) {
   if (file?.name) {
     const fileType = file.name.split(".").pop();
@@ -29,7 +34,7 @@ export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
     const { getUser } = getKindeServerSession();
     const user = await getUser();
-    console.log("kinde user", user);
+
     if (!user?.id || !user.email) throw new TRPCError({ code: "UNAUTHORIZED" });
 
     const dbUser = await db.user.findFirst({
@@ -37,15 +42,14 @@ export const appRouter = router({
         id: user.id,
       },
     });
-    console.log("db before", dbUser);
+
     if (!dbUser) {
       const res = await db.user.create({
         data: {
-          id: user.id, // from kinde
+          id: user.id,
           email: user.email,
         },
       });
-      console.log("db after", res);
     }
 
     return { success: true };
@@ -183,16 +187,32 @@ export const appRouter = router({
       return file;
     }),
   createFile: privateProcedure
-    .input(z.object({ key: z.string(), name: z.string(), url: z.string() }))
+    .input(
+      z.object({
+        key: z.string(),
+        name: z.string(),
+        url: z.string(),
+        isSubscribed: z.boolean(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const { userId } = ctx;
+      const { key, name, url, isSubscribed } = input;
+
+      const fileExists = await db.file.findFirst({
+        where: {
+          key,
+        },
+      });
+
+      if (fileExists) throw new TRPCError({ code: "CONFLICT" });
 
       const file = await db.file.create({
         data: {
-          key: input.key,
-          name: input.name,
+          key,
+          name,
           userId,
-          url: input.url,
+          url,
           uploadStatus: "PROCESSING",
         },
       });
@@ -205,11 +225,8 @@ export const appRouter = router({
         const pageLevelDocs = await loader.load();
         const pagesCount = pageLevelDocs.length;
 
-        const isSubscribed = true;
-        const isProExceeded =
-          pagesCount > PLANS.find((plan) => plan.name === "Pro")!.pagesPerPdf;
-        const isFreeExceeded =
-          pagesCount > PLANS.find((plan) => plan.name === "Free")!.pagesPerPdf;
+        const isProExceeded = pagesCount > PRO_PLAN!.pagesPerPdf;
+        const isFreeExceeded = pagesCount > FREE_PLAN!.pagesPerPdf;
 
         if (
           (isSubscribed && isProExceeded) ||
@@ -287,22 +304,26 @@ export const appRouter = router({
 
       return file;
     }),
-  createSignedUrl: privateProcedure.query(async () => {
-    const key = uuidv4() + ".pdf";
+  createSignedUrl: privateProcedure
+    .input(z.object({ isSubscribed: z.boolean() }))
+    .query(async ({ input }) => {
+      const key = uuidv4() + ".pdf";
 
-    const putObjectCommand = new PutObjectCommand({
-      Bucket: process.env.AWS_BUCKET,
-      Key: key,
-      ContentType: "application/pdf",
-      // ContentLength: MAX_FILE_SIZE,
-    });
+      const putObjectCommand = new PutObjectCommand({
+        Bucket: process.env.AWS_BUCKET,
+        Key: key,
+        ContentType: "application/pdf",
+        ContentLength: input.isSubscribed
+          ? PRO_MAX_FILE_SIZE
+          : FREE_MAX_FILE_SIZE,
+      });
 
-    const uploadUrl = await getSignedUrl(s3, putObjectCommand, {
-      expiresIn: 120,
-    });
+      const uploadUrl = await getSignedUrl(s3, putObjectCommand, {
+        expiresIn: 120,
+      });
 
-    return { url: uploadUrl, key };
-  }),
+      return { url: uploadUrl, key };
+    }),
 });
 
 export type AppRouter = typeof appRouter;
