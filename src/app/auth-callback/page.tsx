@@ -16,7 +16,6 @@ const AuthCallbackPage = () => {
       }
     },
     onError: (err) => {
-      console.log(err);
       if (err.data?.code === "UNAUTHORIZED") {
         router.push("/sign-in");
       }

@@ -259,7 +259,6 @@ export const appRouter = router({
           },
         });
       } catch (err) {
-        console.log(err);
         await db.file.update({
           data: {
             uploadStatus: "FAILED",
