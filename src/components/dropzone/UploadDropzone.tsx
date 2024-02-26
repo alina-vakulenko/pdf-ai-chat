@@ -4,11 +4,12 @@ import { useState } from "react";
 import Dropzone from "react-dropzone";
 import { useRouter } from "next/navigation";
 import { Cloud } from "lucide-react";
+import { ROUTES } from "@/config/routes";
 import { trpc } from "@/app/_trpc/client";
-import { useToast } from "./ui/use-toast";
+import { useUploadProgress } from "@/lib/hooks/useUploadProgress";
+import { useToast } from "../ui/use-toast";
 import UploadProgress from "./UploadProgress";
 import UploadedFilePreview from "./UploadedFilePreview";
-import { useUploadProgress } from "./useUploadProgress";
 
 const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const router = useRouter();
@@ -18,14 +19,14 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const [isUploading, setIsUploading] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
-  const { data: presignedUrl, refetch } = trpc.createSignedUrl.useQuery({
+  const { data: presignedUrl, refetch } = trpc.getPresignedUrl.useQuery({
     isSubscribed,
   });
 
   const { mutate: createFile } = trpc.createFile.useMutation({
     onSuccess: async (file) => {
       setFile(null);
-      router.push(`/dashboard/${file.id}`);
+      router.push(`${ROUTES.dashboard}/${file.id}`);
     },
   });
 

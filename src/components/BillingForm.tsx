@@ -25,6 +25,7 @@ const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
   const { mutate: createStripeSession, isLoading } =
     trpc.createStripeSession.useMutation({
       onSuccess: ({ url }) => {
+        console.log("billing url:", url);
         if (url) {
           window.location.href = url;
         } else {
@@ -50,7 +51,7 @@ const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
           <CardHeader>
             <CardTitle>Subscription Plan</CardTitle>
             <CardDescription>
-              You are currently on the{" "}
+              You are currently on the&npsp;
               <strong>{subscriptionPlan.name} plan.</strong>
             </CardDescription>
           </CardHeader>
@@ -67,8 +68,8 @@ const BillingForm = ({ subscriptionPlan }: BillingFormProps) => {
             {subscriptionPlan.isSubscribed ? (
               <p className="rounded-full text-xs font-medium">
                 {subscriptionPlan.isCanceled
-                  ? "Your plan will be canceled on _"
-                  : "Your plan renews on _"}
+                  ? "Your plan will be canceled on "
+                  : "Your plan renews on "}
                 {format(subscriptionPlan.stripeCurrentPeriodEnd!, "dd.MM.yyyy")}
                 .
               </p>

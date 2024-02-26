@@ -1,20 +1,21 @@
 import { notFound, redirect } from "next/navigation";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { db } from "@/db";
-import PdfRenderer from "@/components/PdfRenderer";
+import PdfRenderer from "@/components/pdf-renderer/PdfRenderer";
 import ChatWrapper from "@/components/chat/ChatWrapper";
+import { ROUTES } from "@/config/routes";
 
 interface FileProps {
   params: { fileId: string };
 }
 
-const Page = async ({ params }: FileProps) => {
+const FilePage = async ({ params }: FileProps) => {
   const { fileId } = params;
 
   const { getUser } = getKindeServerSession();
   const user = await getUser();
 
-  if (!user || !user.id) redirect(`/auth-callback?origin=dashboard/${fileId}`);
+  if (!user?.id) redirect(`${ROUTES.authCallback}?origin=dashboard/${fileId}`);
 
   const file = await db.file.findFirst({
     where: {
@@ -41,4 +42,4 @@ const Page = async ({ params }: FileProps) => {
   );
 };
 
-export default Page;
+export default FilePage;

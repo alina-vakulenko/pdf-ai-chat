@@ -9,10 +9,10 @@ import { useResizeDetector } from "react-resize-detector";
 import { Document, Page, pdfjs } from "react-pdf";
 import SimpleBar from "simplebar-react";
 import { cn } from "@/lib/utils";
-import { usePdfPagination } from "../lib/hooks/usePdfPagination";
-import { useToast } from "./ui/use-toast";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { usePdfPagination } from "../../lib/hooks/usePdfPagination";
+import { useToast } from "../ui/use-toast";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 import PdfFullScreen from "./PdfFullScreen";
 import PdfZoom from "./PdfZoom";
 

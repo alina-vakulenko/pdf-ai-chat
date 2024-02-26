@@ -1,8 +1,9 @@
-import MaxWidthWrapper from "@/components/MaxWidthWrapper";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { ROUTES } from "@/config/routes";
+import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import { buttonVariants } from "@/components/ui/button";
-import Image from "next/image";
 
 export default function Home() {
   return (
@@ -29,7 +30,7 @@ export default function Home() {
             size: "lg",
             className: "mt-5",
           })}
-          href="/dashboard"
+          href={ROUTES.dashboard}
           target="_blank"
         >
           Get started <ArrowRight className="ml-2 h-5 w-5" />
@@ -104,7 +105,7 @@ export default function Home() {
               <span className="mt-2 text-zinc-700">
                 Either starting out with a free plan or choose our{" "}
                 <Link
-                  href="/pricing"
+                  href={ROUTES.pricing}
                   className="text-blue-700 underline underline-offset-2"
                 >
                   pro plan

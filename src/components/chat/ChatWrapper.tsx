@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronLeft, Loader2, XCircle } from "lucide-react";
+import { ROUTES } from "@/config/routes";
+import { trpc } from "@/app/_trpc/client";
+import { ChatContextProvider } from "./ChatContext";
 import Messages from "./Messages";
 import ChatInput from "./ChatInput";
-import { trpc } from "@/app/_trpc/client";
-import { ChevronLeft, Loader2, XCircle } from "lucide-react";
-import Link from "next/link";
-import { ChatContextProvider } from "./ChatContext";
 import { buttonVariants } from "../ui/button";
 
 interface ChatWrapperProps {
@@ -67,7 +68,7 @@ const ChatWrapper = ({ fileId }: ChatWrapperProps) => {
               5 pages per PDF.
             </p>
             <Link
-              href="/dashboard"
+              href={ROUTES.dashboard}
               className={buttonVariants({
                 variant: "secondary",
                 className: "mt-4",

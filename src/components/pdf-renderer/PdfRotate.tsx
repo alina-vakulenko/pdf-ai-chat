@@ -1,5 +1,5 @@
 import { RotateCw } from "lucide-react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 type PdfRotateProps = {
   setRotation: React.Dispatch<React.SetStateAction<number>>;

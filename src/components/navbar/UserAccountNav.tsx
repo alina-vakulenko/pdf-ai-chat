@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Gem } from "lucide-react";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/server";
+import { ROUTES } from "@/config/routes";
 import { getUserSubscriptionPlan } from "@/lib/stripe";
 import {
   DropdownMenu,
@@ -9,10 +10,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Button } from "./ui/button";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Icons } from "./Icons";
+} from "../ui/dropdown-menu";
+import { Button } from "../ui/button";
+import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Icons } from "../Icons";
 
 type UserAccountNavProps = {
   name: string;
@@ -63,22 +64,24 @@ const UserAccountNav = async ({
             )}
           </div>
         </div>
+
         <DropdownMenuSeparator />
 
         <DropdownMenuItem asChild>
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href={ROUTES.dashboard}>Dashboard</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           {subscriptionPlan?.isSubscribed ? (
-            <Link href="/dashboard/billing">Manage Subscription</Link>
+            <Link href={ROUTES.billing}>Manage Subscription</Link>
           ) : (
-            <Link href="/pricing">
+            <Link href={ROUTES.pricing}>
               Upgrade <Gem className="text-blue-600 h-4 w-4 ml-1.5" />
             </Link>
           )}
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
+
         <DropdownMenuItem className="cursor-pointer">
           <LogoutLink>Log out</LogoutLink>
         </DropdownMenuItem>

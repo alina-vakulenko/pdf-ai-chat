@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, Check, HelpCircle, Minus } from "lucide-react";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { ROUTES } from "@/config/routes";
 import { PLANS } from "@/config/stripe";
+import { featuresPerPlan } from "@/config/featuresPerPlan";
 import { cn } from "@/lib/utils";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import UpgradeButton from "@/components/UpgradeButton";
@@ -13,64 +15,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const Page = async () => {
+const PricingPage = async () => {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
-
-  const pricingItems = [
-    {
-      plan: "Free",
-      tagline: "For small side projects.",
-      quota: 10,
-      features: [
-        {
-          text: "5 pages per PDF",
-          footnote: "The maximum amount of pages per PDF-file.",
-        },
-        {
-          text: "4MB file size limit",
-          footnote: "The maximum file size of a single PDF file.",
-        },
-        {
-          text: "Mobile-friendly interface",
-        },
-        {
-          text: "Higher-quality responses",
-          footnote: "Better algorithmic responses for enhanced content quality",
-          negative: true,
-        },
-        {
-          text: "Priority support",
-          negative: true,
-        },
-      ],
-    },
-    {
-      plan: "Pro",
-      tagline: "For larger projects with higher needs.",
-      quota: PLANS.find((p) => p.slug === "pro")!.quota,
-      features: [
-        {
-          text: "25 pages per PDF",
-          footnote: "The maximum amount of pages per PDF-file.",
-        },
-        {
-          text: "16MB file size limit",
-          footnote: "The maximum file size of a single PDF file.",
-        },
-        {
-          text: "Mobile-friendly interface",
-        },
-        {
-          text: "Higher-quality responses",
-          footnote: "Better algorithmic responses for enhanced content quality",
-        },
-        {
-          text: "Priority support",
-        },
-      ],
-    },
-  ];
 
   return (
     <MaxWidthWrapper className="mb-8 mt-24 text-center max-w-5xl">
@@ -84,7 +31,7 @@ const Page = async () => {
 
       <div className="pt-12 grid grid-cols-1 gap-10 lg:grid-cols-2">
         <TooltipProvider>
-          {pricingItems.map(({ plan, tagline, quota, features }) => {
+          {featuresPerPlan.map(({ plan, tagline, quota, features }) => {
             const price =
               PLANS.find((p) => p.slug === plan.toLowerCase())?.price.amount ||
               0;
@@ -171,7 +118,7 @@ const Page = async () => {
                 <div className="p-5">
                   {plan === "Free" ? (
                     <Link
-                      href={user ? "/dashboard" : "/sign-in"}
+                      href={user ? ROUTES.dashboard : ROUTES.signIn}
                       className={buttonVariants({
                         className: "w-full",
                         variant: "secondary",
@@ -184,7 +131,7 @@ const Page = async () => {
                     <UpgradeButton />
                   ) : (
                     <Link
-                      href="/sign-in"
+                      href={ROUTES.signIn}
                       className={buttonVariants({ className: "w-full" })}
                     >
                       {user ? "Upgrade now" : "Sign up"}
@@ -201,4 +148,4 @@ const Page = async () => {
   );
 };
 
-export default Page;
+export default PricingPage;

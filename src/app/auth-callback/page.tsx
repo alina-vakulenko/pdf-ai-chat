@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "../_trpc/client";
 import { Loader2 } from "lucide-react";
+import { ROUTES } from "@/config/routes";
 
 const AuthCallbackPage = () => {
   const router = useRouter();
@@ -12,12 +13,13 @@ const AuthCallbackPage = () => {
   trpc.authCallback.useQuery(undefined, {
     onSuccess: ({ success }) => {
       if (success) {
-        router.push(origin ? `/${origin}` : "/dashboard");
+        router.push(origin ? `/${origin}` : ROUTES.dashboard);
       }
     },
     onError: (err) => {
+      console.log("auth error", err);
       if (err.data?.code === "UNAUTHORIZED") {
-        router.push("/sign-in");
+        router.push(ROUTES.signIn);
       }
     },
     retry: true,

@@ -17,6 +17,7 @@ import { getPinecone } from "@/lib/pinecone";
 import { absoluteUrl } from "@/lib/utils";
 import { getUserSubscriptionPlan, stripe } from "@/lib/stripe";
 import { PLANS } from "@/config/stripe";
+import { ROUTES } from "@/config/routes";
 
 const FREE_PLAN = PLANS.find((plan) => plan.name === "Free");
 const PRO_PLAN = PLANS.find((plan) => plan.name === "Pro");
@@ -38,7 +39,7 @@ export const appRouter = router({
     });
 
     if (!dbUser) {
-      const res = await db.user.create({
+      await db.user.create({
         data: {
           id: user.id,
           email: user.email,
@@ -56,55 +57,6 @@ export const appRouter = router({
         userId,
       },
     });
-  }),
-  createStripeSession: privateProcedure.mutation(async ({ ctx }) => {
-    const { userId } = ctx;
-
-    const billingUrl = absoluteUrl("/dashboard/billing");
-
-    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-    const dbUser = db.user.findFirst({
-      where: {
-        id: userId,
-      },
-    });
-
-    if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-    const subscriptionPlan = await getUserSubscriptionPlan();
-
-    if (
-      subscriptionPlan.isSubscribed &&
-      "stripeCustomerId" in dbUser &&
-      dbUser?.stripeCustomerId
-    ) {
-      const stripeSession = await stripe.billingPortal.sessions.create({
-        customer: dbUser.stripeCustomerId as string,
-        return_url: billingUrl,
-      });
-
-      return { url: stripeSession.url };
-    }
-
-    const stripeSession = await stripe.checkout.sessions.create({
-      success_url: billingUrl,
-      cancel_url: billingUrl,
-      payment_method_types: ["card", "paypal"],
-      mode: "subscription",
-      billing_address_collection: "auto",
-      line_items: [
-        {
-          price: PLANS.find((plan) => plan.name === "Pro")?.price.priceIds.test,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        userId,
-      },
-    });
-
-    return { url: stripeSession.url };
   }),
   getFileMessages: privateProcedure
     .input(
@@ -155,30 +107,6 @@ export const appRouter = router({
         messages,
         nextCursor,
       };
-    }),
-  deleteFile: privateProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const { userId } = ctx;
-
-      const file = await db.file.findFirst({
-        where: {
-          id: input.id,
-          userId,
-        },
-      });
-
-      if (!file) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      await db.file.delete({
-        where: {
-          id: input.id,
-        },
-      });
-
-      return file;
     }),
   createFile: privateProcedure
     .input(
@@ -265,6 +193,30 @@ export const appRouter = router({
 
       return file;
     }),
+  deleteFile: privateProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { userId } = ctx;
+
+      const file = await db.file.findFirst({
+        where: {
+          id: input.id,
+          userId,
+        },
+      });
+
+      if (!file) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await db.file.delete({
+        where: {
+          id: input.id,
+        },
+      });
+
+      return file;
+    }),
   getFileUploadStatus: privateProcedure
     .input(z.object({ fileId: z.string() }))
     .query(async ({ input, ctx }) => {
@@ -297,7 +249,7 @@ export const appRouter = router({
 
       return file;
     }),
-  createSignedUrl: privateProcedure
+  getPresignedUrl: privateProcedure
     .input(z.object({ isSubscribed: z.boolean() }))
     .query(async ({ input }) => {
       const Bucket = process.env.AWS_BUCKET!;
@@ -323,6 +275,53 @@ export const appRouter = router({
 
       return { url: uploadUrl, fields };
     }),
+  createStripeSession: privateProcedure.mutation(async ({ ctx }) => {
+    const { userId } = ctx;
+    if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+    const dbUser = db.user.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!dbUser) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+    const billingUrl = absoluteUrl(ROUTES.billing);
+    const subscriptionPlan = await getUserSubscriptionPlan();
+
+    if (
+      subscriptionPlan.isSubscribed &&
+      "stripeCustomerId" in dbUser &&
+      dbUser?.stripeCustomerId
+    ) {
+      const stripeSession = await stripe.billingPortal.sessions.create({
+        customer: dbUser.stripeCustomerId as string,
+        return_url: billingUrl,
+      });
+
+      return { url: stripeSession.url };
+    }
+
+    const stripeSession = await stripe.checkout.sessions.create({
+      success_url: billingUrl,
+      cancel_url: billingUrl,
+      payment_method_types: ["card", "paypal"],
+      mode: "subscription",
+      billing_address_collection: "auto",
+      line_items: [
+        {
+          price: PLANS.find((plan) => plan.name === "Pro")?.price.priceIds.test,
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        userId,
+      },
+    });
+
+    return { url: stripeSession.url };
+  }),
 });
 
 export type AppRouter = typeof appRouter;
