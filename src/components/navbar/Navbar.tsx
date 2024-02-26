@@ -48,7 +48,7 @@ const AuthedMenu = ({ user }: AuthedMenuProps) => {
       >
         Dashboard
       </Link>
-      {/* <UserAccountNav
+      <UserAccountNav
         name={
           !user.given_name || !user.family_name
             ? "Your account"
@@ -58,7 +58,7 @@ const AuthedMenu = ({ user }: AuthedMenuProps) => {
         }
         email={user.email}
         avatarUrl={user.picture}
-      /> */}
+      />
     </>
   );
 };
