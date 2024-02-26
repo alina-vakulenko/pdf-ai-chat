@@ -46,10 +46,12 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
       );
       formData.append("file", file);
 
-      await fetch(presignedUrl.url, {
+      const res = await fetch(presignedUrl.url, {
         method: "POST",
         body: formData,
       });
+
+      console.log("s3 upload status", res.status);
 
       const createdFile = createFile({
         name: file.name,
@@ -61,6 +63,11 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
       return createdFile;
     } catch (err) {
       console.log(err);
+      toast({
+        title: "File upload failed",
+        description: "Please check limits for your subscription plan",
+        variant: "destructive",
+      });
     }
   };
 

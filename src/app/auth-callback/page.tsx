@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { trpc } from "../_trpc/client";
 import { Loader2 } from "lucide-react";
+import { trpc } from "../_trpc/client";
 import { ROUTES } from "@/config/routes";
 
-const AuthCallbackPage = () => {
+const AuthCallback = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const origin = searchParams.get("origin");
@@ -17,7 +18,6 @@ const AuthCallbackPage = () => {
       }
     },
     onError: (err) => {
-      console.log("auth error", err);
       if (err.data?.code === "UNAUTHORIZED") {
         router.push(ROUTES.signIn);
       }
@@ -34,6 +34,14 @@ const AuthCallbackPage = () => {
         <p>You will be redirected automatically.</p>
       </div>
     </div>
+  );
+};
+
+const AuthCallbackPage = () => {
+  return (
+    <Suspense>
+      <AuthCallback />
+    </Suspense>
   );
 };
 
