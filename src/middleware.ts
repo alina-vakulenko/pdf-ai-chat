@@ -10,7 +10,7 @@ export async function middleware(req: NextRequest) {
   const isAuth = isAuthenticated();
 
   if (!isAuthenticated()) {
-    const pathname = req.nextUrl.pathname; // relative pathname
+    const pathname = req.nextUrl.pathname;
 
     const isApiRoute = req.nextUrl.pathname.startsWith("/api");
     const unprotectedRoutes = ["/api/auth/login", "/api/auth/register", "/"];

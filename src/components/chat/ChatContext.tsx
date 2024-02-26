@@ -49,7 +49,7 @@ export const ChatContextProvider = ({
       return res.body;
     },
     onMutate: async ({ message }) => {
-      //optimistic update
+      // optimistic update
       backupMessage.current = message;
       setMessage("");
 
@@ -65,7 +65,6 @@ export const ChatContextProvider = ({
         (old) => {
           if (!old) {
             return {
-              //react query infinitie data shape
               pages: [],
               pageParams: [],
             };

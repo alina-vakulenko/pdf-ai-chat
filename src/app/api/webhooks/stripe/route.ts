@@ -51,7 +51,6 @@ export async function POST(request: Request) {
   }
   // user's subscription renew
   if (event.type === "invoice.payment_succeeded") {
-    // Retrieve the subscription details from Stripe.
     const subscription = await stripe.subscriptions.retrieve(
       session.subscription as string
     );

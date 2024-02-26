@@ -74,7 +74,7 @@ const PdfRenderer = ({ fileUrl }: PdfRendererProps) => {
             variant="ghost"
             aria-label="previous page"
           >
-            <ChevronDown className="w-4 h-4" />
+            <ChevronUp className="w-4 h-4" />
           </Button>
 
           <div className="flex items-center gap-1.5">
@@ -106,7 +106,7 @@ const PdfRenderer = ({ fileUrl }: PdfRendererProps) => {
             variant="ghost"
             aria-label="next page"
           >
-            <ChevronUp className="w-4 h-4" />
+            <ChevronDown className="w-4 h-4" />
           </Button>
         </div>
         {/** TOOLS */}

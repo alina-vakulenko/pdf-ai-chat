@@ -1,8 +1,10 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  PresignedPostOptions,
+  createPresignedPost,
+} from "@aws-sdk/s3-presigned-post";
 import { publicProcedure, privateProcedure, router } from "./trpc";
 import { TRPCError } from "@trpc/server";
 import { s3 } from "@/app/_s3/s3";
@@ -21,14 +23,6 @@ const PRO_PLAN = PLANS.find((plan) => plan.name === "Pro");
 
 const FREE_MAX_FILE_SIZE = 1024 * 1024 * 4;
 const PRO_MAX_FILE_SIZE = 1024 * 1024 * 16;
-
-function checkFileType(file: File) {
-  if (file?.name) {
-    const fileType = file.name.split(".").pop();
-    if (fileType === "pdf") return true;
-  }
-  return false;
-}
 
 export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
@@ -306,22 +300,28 @@ export const appRouter = router({
   createSignedUrl: privateProcedure
     .input(z.object({ isSubscribed: z.boolean() }))
     .query(async ({ input }) => {
-      const key = uuidv4() + ".pdf";
+      const Bucket = process.env.AWS_BUCKET!;
+      const Key = uuidv4() + ".pdf";
+      const Conditions: PresignedPostOptions["Conditions"] = [
+        ["eq", "$bucket", Bucket],
+        [
+          "content-length-range",
+          0,
+          input.isSubscribed ? PRO_MAX_FILE_SIZE : FREE_MAX_FILE_SIZE,
+        ],
+        ["eq", "$Content-Type", "application/pdf"],
+      ];
+      const Fields = { key: Key };
 
-      const putObjectCommand = new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET,
-        Key: key,
-        ContentType: "application/pdf",
-        ContentLength: input.isSubscribed
-          ? PRO_MAX_FILE_SIZE
-          : FREE_MAX_FILE_SIZE,
+      const { url: uploadUrl, fields } = await createPresignedPost(s3, {
+        Bucket,
+        Key,
+        Conditions,
+        Fields,
+        Expires: 600, // Expires in 10 minutes
       });
 
-      const uploadUrl = await getSignedUrl(s3, putObjectCommand, {
-        expiresIn: 120,
-      });
-
-      return { url: uploadUrl, key };
+      return { url: uploadUrl, fields };
     }),
 });
 

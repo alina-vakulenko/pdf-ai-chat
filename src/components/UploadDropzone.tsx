@@ -31,7 +31,7 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
 
   const saveFile = async (file: File) => {
     refetch();
-    if (!presignedUrl?.key) {
+    if (!presignedUrl?.fields.key) {
       return toast({
         title: "Something went wrong",
         description: "Please try again later",
@@ -40,17 +40,20 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
     }
     try {
       const formData = new FormData();
-      formData.set("file", file);
+      Object.keys(presignedUrl.fields).forEach((key) =>
+        formData.append(key, presignedUrl.fields[key])
+      );
+      formData.append("file", file);
 
       await fetch(presignedUrl.url, {
-        method: "PUT",
+        method: "POST",
         body: formData,
       });
 
       const createdFile = createFile({
         name: file.name,
-        key: presignedUrl.key,
-        url: `https://${process.env.AWS_BUCKET}.s3.eu-north-1.amazonaws.com/${presignedUrl.key}`,
+        key: presignedUrl.fields.key,
+        url: `${presignedUrl.url}${presignedUrl.fields.key}`,
         isSubscribed,
       });
 
@@ -78,6 +81,7 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
       {({ getRootProps, getInputProps, acceptedFiles }) => (
         <div
           {...getRootProps()}
+          onClick={(e) => e.stopPropagation()} // prevent file picker to open twice
           className="border h-64 m-4 border-dashed border-gray-300 rounded-lg"
         >
           <div className="flex items-center justify-center h-full w-full">
