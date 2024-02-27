@@ -57,7 +57,7 @@ const PricingPage = async () => {
                   <p className="my-5 font-display text-6xl font-semibold">
                     ${price}
                   </p>
-                  <p className="text-gray-500">per months</p>
+                  <p className="text-gray-500">per month</p>
                 </div>
 
                 <div className="flex items-center justify-center h-20 border-b border-t border-gray-200 bg-gray-50">
@@ -87,8 +87,8 @@ const PricingPage = async () => {
                       {footnote ? (
                         <div className="flex items-center space-x-1">
                           <p
-                            className={cn("text-gray-400", {
-                              "text-gray-600": negative,
+                            className={cn("text-gray-600", {
+                              "text-gray-400": negative,
                             })}
                           >
                             {text}
@@ -104,8 +104,8 @@ const PricingPage = async () => {
                         </div>
                       ) : (
                         <p
-                          className={cn("text-gray-400", {
-                            "text-gray-600": negative,
+                          className={cn("text-gray-600", {
+                            "text-gray-400": negative,
                           })}
                         >
                           {text}

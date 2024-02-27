@@ -11,7 +11,7 @@ export const featuresPerPlan = [
         footnote: "The maximum amount of pages per PDF-file.",
       },
       {
-        text: `${FREE_PLAN.maxSizeBytes * 1024 * 1024}MB file size limit`,
+        text: `${FREE_PLAN.maxSizeBytes / (1024 * 1024)}MB file size limit`,
         footnote: "The maximum file size of a single PDF file.",
       },
       {
@@ -19,7 +19,6 @@ export const featuresPerPlan = [
       },
       {
         text: "Higher-quality responses",
-        footnote: "Better algorithmic responses for enhanced content quality",
         negative: true,
       },
       {
@@ -38,7 +37,7 @@ export const featuresPerPlan = [
         footnote: "The maximum amount of pages per PDF-file.",
       },
       {
-        text: `${PRO_PLAN.maxSizeBytes * 1024 * 1024}MB file size limit`,
+        text: `${PRO_PLAN.maxSizeBytes / (1024 * 1024)}MB file size limit`,
         footnote: "The maximum file size of a single PDF file.",
       },
       {
