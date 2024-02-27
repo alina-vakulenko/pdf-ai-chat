@@ -26,7 +26,7 @@ const ChatInput = ({ disabled }: ChatInputProps) => {
                 autoFocus
                 rows={1}
                 maxRows={4}
-                className="resize-none pr-12 text-base py-3 scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch"
+                className="resize-none pr-16 text-base py-3 scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch"
                 value={message}
                 onChange={handleInpuChange}
                 onKeyDown={(e) => {
@@ -40,7 +40,7 @@ const ChatInput = ({ disabled }: ChatInputProps) => {
               />
               <Button
                 type="submit"
-                className="absolute top-1.5 -translate-x-1/2 right-[8px]"
+                className="absolute top-1.5 -translate-x-1/2 -right-2"
                 aria-label="send message"
                 onClick={() => {
                   addMessage();

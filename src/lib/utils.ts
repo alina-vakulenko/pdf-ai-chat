@@ -10,8 +10,8 @@ export function absoluteUrl(path: string) {
   if (typeof window !== "undefined") {
     return path;
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}${path}`;
+  if (process.env.NODE_ENV === "production") {
+    return `${process.env.PROD_URL}/${path}`;
   }
   return `http://localhost:${process.env.PORT}${path}`;
 }
@@ -45,7 +45,7 @@ export function constructMetadata({
       // creator:"@twitteruser"
     },
     icons,
-    metadataBase: new URL(`https://${process.env.VERCEL_URL}`),
+    metadataBase: new URL(process.env.PROD_URL!),
     ...(noIndex && {
       robots: {
         index: false,

@@ -45,6 +45,7 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
     Object.keys(presignedUrl.fields).forEach((key) =>
       formData.append(key, presignedUrl.fields[key])
     );
+    formData.append("Content-Type", file.type);
     formData.append("file", file);
 
     try {
