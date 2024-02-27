@@ -44,10 +44,8 @@ const UserAccountNav = async ({
               </div>
             ) : (
               <AvatarFallback>
-                <span className="sr-only">
-                  {name}
-                  <Icons.user className="h-4 w-4 text-zinc-900" />
-                </span>
+                <span className="sr-only">{name}</span>
+                <Icons.user className="h-4 w-4 text-zinc-900" />
               </AvatarFallback>
             )}
           </Avatar>

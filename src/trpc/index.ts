@@ -10,20 +10,14 @@ import { TRPCError } from "@trpc/server";
 import { s3 } from "@/app/_s3/s3";
 import { db } from "@/db";
 import { INFINITE_QUERY_LIMIT } from "@/config/infinite-query";
+import { FREE_PLAN, PLANS, PRO_PLAN } from "@/config/stripe";
+import { ROUTES } from "@/config/routes";
 import { PDFLoader } from "langchain/document_loaders/fs/pdf";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PineconeStore } from "langchain/vectorstores/pinecone";
 import { getPinecone } from "@/lib/pinecone";
 import { absoluteUrl } from "@/lib/utils";
 import { getUserSubscriptionPlan, stripe } from "@/lib/stripe";
-import { PLANS } from "@/config/stripe";
-import { ROUTES } from "@/config/routes";
-
-const FREE_PLAN = PLANS.find((plan) => plan.name === "Free");
-const PRO_PLAN = PLANS.find((plan) => plan.name === "Pro");
-
-const FREE_MAX_FILE_SIZE = 1024 * 1024 * 4;
-const PRO_MAX_FILE_SIZE = 1024 * 1024 * 16;
 
 export const appRouter = router({
   authCallback: publicProcedure.query(async () => {
@@ -108,6 +102,33 @@ export const appRouter = router({
         nextCursor,
       };
     }),
+  getFileMessagesCount: privateProcedure
+    .input(
+      z.object({
+        fileId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { userId } = ctx;
+      const { fileId } = input;
+
+      const file = await db.file.findFirst({
+        where: {
+          id: fileId,
+          userId,
+        },
+      });
+
+      if (!file) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const messagesCount = await db.message.count({
+        where: {
+          fileId,
+        },
+      });
+
+      return messagesCount;
+    }),
   createFile: privateProcedure
     .input(
       z.object({
@@ -147,8 +168,8 @@ export const appRouter = router({
         const pageLevelDocs = await loader.load();
         const pagesCount = pageLevelDocs.length;
 
-        const isProExceeded = pagesCount > PRO_PLAN!.pagesPerPdf;
-        const isFreeExceeded = pagesCount > FREE_PLAN!.pagesPerPdf;
+        const isProExceeded = pagesCount > PRO_PLAN.pagesPerPdf;
+        const isFreeExceeded = pagesCount > FREE_PLAN.pagesPerPdf;
 
         if (
           (isSubscribed && isProExceeded) ||
@@ -259,7 +280,7 @@ export const appRouter = router({
         [
           "content-length-range",
           0,
-          input.isSubscribed ? PRO_MAX_FILE_SIZE : FREE_MAX_FILE_SIZE,
+          input.isSubscribed ? PRO_PLAN.maxSizeBytes : FREE_PLAN.maxSizeBytes,
         ],
         ["eq", "$Content-Type", "application/pdf"],
       ];

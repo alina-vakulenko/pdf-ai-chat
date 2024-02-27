@@ -10,6 +10,7 @@ import { useUploadProgress } from "@/lib/hooks/useUploadProgress";
 import { useToast } from "../ui/use-toast";
 import UploadProgress from "./UploadProgress";
 import UploadedFilePreview from "./UploadedFilePreview";
+import { FREE_PLAN, PRO_PLAN } from "@/config/stripe";
 
 const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
   const router = useRouter();
@@ -39,19 +40,48 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
         variant: "destructive",
       });
     }
-    try {
-      const formData = new FormData();
-      Object.keys(presignedUrl.fields).forEach((key) =>
-        formData.append(key, presignedUrl.fields[key])
-      );
-      formData.append("file", file);
 
+    const formData = new FormData();
+    Object.keys(presignedUrl.fields).forEach((key) =>
+      formData.append(key, presignedUrl.fields[key])
+    );
+    formData.append("file", file);
+
+    try {
       const res = await fetch(presignedUrl.url, {
         method: "POST",
         body: formData,
       });
 
-      console.log("s3 upload status", res.status);
+      if (!res.ok) {
+        setIsUploading(false);
+        if (file.type !== "application/pdf") {
+          return toast({
+            title: "File upload failed",
+            description: "Only PDF files are accepted",
+            variant: "destructive",
+          });
+        }
+        if (
+          (isSubscribed && file.size > PRO_PLAN.maxSizeBytes) ||
+          (!isSubscribed && file.size > FREE_PLAN.maxSizeBytes)
+        ) {
+          return toast({
+            title: "File upload failed",
+            description: `File size exceeds limit of ${
+              isSubscribed
+                ? PRO_PLAN.maxSizeBytes * 1024 * 1024 + "MB"
+                : FREE_PLAN.maxSizeBytes * 1024 * 1024 + "MB"
+            }`,
+            variant: "destructive",
+          });
+        }
+        return toast({
+          title: "File upload failed",
+          description: "Please check your subscription plan's limitations",
+          variant: "destructive",
+        });
+      }
 
       const createdFile = createFile({
         name: file.name,
@@ -61,11 +91,10 @@ const UploadDropzone = ({ isSubscribed }: { isSubscribed: boolean }) => {
       });
 
       return createdFile;
-    } catch (err) {
-      console.log(err);
+    } catch {
       toast({
         title: "File upload failed",
-        description: "Please check limits for your subscription plan",
+        description: "Please try again later",
         variant: "destructive",
       });
     }

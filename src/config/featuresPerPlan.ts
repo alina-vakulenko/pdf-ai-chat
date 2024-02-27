@@ -1,17 +1,17 @@
-import { PLANS } from "./stripe";
+import { FREE_PLAN, PRO_PLAN } from "./stripe";
 
 export const featuresPerPlan = [
   {
-    plan: "Free",
+    plan: FREE_PLAN.name,
     tagline: "For small side projects.",
-    quota: 10,
+    quota: FREE_PLAN.quota,
     features: [
       {
-        text: "5 pages per PDF",
+        text: `${FREE_PLAN.pagesPerPdf} pages per PDF`,
         footnote: "The maximum amount of pages per PDF-file.",
       },
       {
-        text: "4MB file size limit",
+        text: `${FREE_PLAN.maxSizeBytes * 1024 * 1024}MB file size limit`,
         footnote: "The maximum file size of a single PDF file.",
       },
       {
@@ -29,16 +29,16 @@ export const featuresPerPlan = [
     ],
   },
   {
-    plan: "Pro",
+    plan: PRO_PLAN.name,
     tagline: "For larger projects with higher needs.",
-    quota: PLANS.find((p) => p.slug === "pro")!.quota,
+    quota: PRO_PLAN.quota,
     features: [
       {
-        text: "25 pages per PDF",
+        text: `${PRO_PLAN.pagesPerPdf} pages per PDF`,
         footnote: "The maximum amount of pages per PDF-file.",
       },
       {
-        text: "16MB file size limit",
+        text: `${PRO_PLAN.maxSizeBytes * 1024 * 1024}MB file size limit`,
         footnote: "The maximum file size of a single PDF file.",
       },
       {
